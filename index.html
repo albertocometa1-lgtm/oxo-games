@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>OXO - 3×3</title>
+  <meta name="description" content="OXO 3×3: IA con tre difficoltà (Impossibile/ Difficile/ Facile) e 2 Giocatori locale. Effetti fullscreen, punteggi e musica 8‑bit." />
+  <meta name="theme-color" content="#0f1b12">
+  <link rel="icon" href="assets/img/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/img/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preload" href="assets/img/logo.svg" as="image" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img class="logo" src="assets/img/logo.svg" alt="" width="38" height="38" />
+    <h1>OXO - 3×3</h1>
+  </header>
+
+  <section class="settings" role="group" aria-label="Impostazioni di gioco">
+    <div class="setting full">
+      <div class="label">🎮 Partita</div>
+      <div class="controls"><button id="newBtn" class="btn-primary btn-wide">Nuova partita</button></div>
+    </div>
+
+    <div class="setting">
+      <div class="label">👥 Modalità</div>
+      <div class="controls">
+        <select id="modeSel" aria-label="Modalità">
+          <option value="ai">1 Giocatore vs IA</option>
+          <option value="pvp">2 Giocatori (locale)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="setting">
+      <div class="label">⏱️ Chi inizia</div>
+      <div class="controls">
+        <select id="firstSel" aria-label="Chi inizia"></select>
+      </div>
+    </div>
+
+    <div class="setting" id="diffRow">
+      <div class="label">🎯 Difficoltà</div>
+      <div class="controls">
+        <select id="diffSel" aria-label="Difficoltà" title="Impossibile: IA perfetta (non perde mai).">
+          <option value="impossible">Impossibile</option>
+          <option value="hard">Difficile</option>
+          <option value="easy">Facile</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="setting">
+      <div class="label">🎵 Musica</div>
+      <div class="controls"><button id="musicBtn" class="toggle">ON</button></div>
+    </div>
+    <div class="setting">
+      <div class="label">🔊 Audio FX</div>
+      <div class="controls"><button id="muteBtn" class="toggle">ON</button></div>
+    </div>
+
+    <div class="setting full">
+      <div class="label">⭐ Punteggio</div>
+      <div class="controls">
+        <div class="score" id="scoreBar">
+          <span class="tag">Tot: <strong id="scoreTotal">0</strong></span>
+          <span class="tag">Best: <strong class="best" id="scoreBest">0</strong></span>
+          <span class="tag">Streak: <strong id="scoreStreak">0</strong></span>
+          <span class="tag" id="scoreStats">W:0 D:0 L:0</span>
+          <button id="scoreReset" title="Azzera punteggio">Azzera</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="setting status-row">
+      <div class="label">📺 Stato</div>
+      <div class="controls"><div id="status" class="statusbar" aria-live="polite">Pronto.</div></div>
+    </div>
+  </section>
+
+  <!-- FX -->
+  <div id="fxWin" class="fx-layer">
+    <canvas id="confetti" class="fx-canvas"></canvas>
+    <canvas id="winRays"  class="fx-canvas"></canvas>
+    <canvas id="winShock" class="fx-canvas"></canvas>
+  </div>
+  <div id="fxLose" class="fx-layer"><div id="loseFlash"></div></div>
+  <div id="fxDraw" class="fx-layer">
+    <canvas id="matrix" class="fx-canvas"></canvas>
+    <div id="drawSweep"></div>
+  </div>
+
+  <section id="crt" class="crt" aria-label="Schermo CRT">
+    <div id="board" class="grid" role="grid" aria-label="Griglia di gioco 3 per 3"></div>
+    <div id="winline" class="winline" hidden></div>
+    <div class="hint" id="hint"></div>
+  </section>
+</div>
+
+<div id="tapAudio">🔊 Tocca per attivare audio</div>
+<div id="scorePop" class="score-pop" aria-hidden="true">+0 XP</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+  // Registra il Service Worker (PWA/offline)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+  }
+</script>
+</body>
+</html>
