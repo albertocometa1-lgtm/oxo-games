@@ -62,7 +62,7 @@
   .xpbar div{height:100%;background:#9aff9a;width:0%} /* NEW */
 
   /* Grid */
-  .grid{display:grid;grid-template-columns:repeat(3,minmax(94px,1fr));gap:var(--cell-gap);width:min(560px,100%);margin:0 auto}
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(94px,1fr));gap:var(--cell-gap);width:min(92vw,560px);margin:0 auto;aspect-ratio:1/1} /* UI NEW */
   .cell{aspect-ratio:1/1;display:grid;place-items:center;font-size:var(--cell-font);
     border:1px solid var(--grid);border-radius:14px;background:linear-gradient(180deg,rgba(8,16,10,.78),rgba(6,10,7,.9));
     color:var(--xColor);text-shadow:0 0 14px currentColor;
@@ -80,6 +80,7 @@
 
   /* FX fullscreen */
   .fx-layer{position:fixed; left:0; top:0; width:100svw; height:100svh; pointer-events:none; z-index:999; contain:layout paint;}
+  body.lowfx .fx-layer{display:none;} /* UI NEW */
   #fxWin,#fxLose,#fxDraw{display:none;color:inherit}
   #fxWin.active,#fxLose.active,#fxDraw.active{display:block}
   #fxWin{color:var(--win)} #fxLose{color:var(--lose)} #fxDraw{color:var(--draw)} /* NEW */
@@ -196,14 +197,42 @@
       </div>
     </div>
 
-    <div class="setting">
-      <div class="label">🎵 Musica</div>
-      <div class="controls"><button id="musicBtn" class="toggle">ON</button></div>
-    </div>
-    <div class="setting">
-      <div class="label">🔊 Audio FX</div>
-      <div class="controls"><button id="muteBtn" class="toggle">ON</button></div>
-    </div>
+    <div class="setting"> <!-- UI NEW -->
+      <div class="label">🎵 Musica</div> <!-- UI NEW -->
+      <div class="controls"> <!-- UI NEW -->
+        <select id="trackSel" aria-label="Selettore brano"> <!-- UI NEW -->
+          <option value="chiptune">Chiptune Pop (C‑G‑Am‑F)</option> <!-- UI NEW -->
+          <option value="retro">Retro Electro (E min)</option> <!-- UI NEW -->
+          <option value="lofi">Lo‑Fi Pulse (D dorico)</option> <!-- UI NEW -->
+          <option value="arcade">Arcade Rush (A mixo)</option> <!-- UI NEW -->
+          <option value="synthwave">Synthwave Glide (F min)</option> <!-- UI NEW -->
+        </select> <!-- UI NEW -->
+      </div> <!-- UI NEW -->
+    </div> <!-- UI NEW -->
+    <div class="setting"> <!-- UI NEW -->
+      <div class="label">Play/Pausa</div> <!-- UI NEW -->
+      <div class="controls"><button id="playBtn">▶︎</button></div> <!-- UI NEW -->
+    </div> <!-- UI NEW -->
+    <div class="setting"> <!-- UI NEW -->
+      <div class="label">Volume Musica</div> <!-- UI NEW -->
+      <div class="controls"><input id="musicVol" type="range" min="0" max="1" step="0.01"></div> <!-- UI NEW -->
+    </div> <!-- UI NEW -->
+    <div class="setting"> <!-- UI NEW -->
+      <div class="label">ON/OFF Musica</div> <!-- UI NEW -->
+      <div class="controls"><button id="musicBtn" class="toggle">ON</button></div> <!-- UI NEW -->
+    </div> <!-- UI NEW -->
+    <div class="setting"> <!-- UI NEW -->
+      <div class="label">Preview 5s</div> <!-- UI NEW -->
+      <div class="controls"><button id="previewBtn">▶︎</button></div> <!-- UI NEW -->
+    </div> <!-- UI NEW -->
+    <div class="setting"> <!-- UI NEW -->
+      <div class="label">🔊 Audio FX</div> <!-- UI NEW -->
+      <div class="controls"><button id="muteBtn" class="toggle">ON</button></div> <!-- UI NEW -->
+    </div> <!-- UI NEW -->
+    <div class="setting"> <!-- UI NEW -->
+      <div class="label">⚡ Riduci effetti</div> <!-- UI NEW -->
+      <div class="controls"><button id="fxBtn" class="toggle">OFF</button></div> <!-- UI NEW -->
+    </div> <!-- UI NEW -->
 
     <div class="setting full">
       <div class="label">⭐ Punteggio</div>
@@ -299,6 +328,15 @@ function levelCap(l){ return 200 + (l-1)*100; } /* NEW */
 function saveScore(){ try{ localStorage.setItem(LSKEY, JSON.stringify(score)); }catch(e){} } /* NEW */
 function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s&&typeof s.total==='number') score=Object.assign(score,s); }catch(e){} syncScoreUI(); syncLevelUI(); } /* NEW */
 
+const AUDIOKEY='oxo_audio_v2'; // MUSIC NEW
+const UIKEY='oxo_ui_v2'; // UI NEW
+let audioState={track:'chiptune',vol:0.45,enabled:true,sfx:true}; // MUSIC NEW
+let uiState={fx:false,xColor:'#9aff9a',oColor:'#4fe6ff',bg:'neon',grid:'standard'}; // UI NEW
+function saveAudio(){ try{ localStorage.setItem(AUDIOKEY, JSON.stringify(audioState)); }catch(e){} } // MUSIC NEW
+function loadAudio(){ try{ const s=JSON.parse(localStorage.getItem(AUDIOKEY)); if(s) audioState=Object.assign(audioState,s); }catch(e){} } // MUSIC NEW
+function saveUI(){ try{ localStorage.setItem(UIKEY, JSON.stringify(uiState)); }catch(e){} } // UI NEW
+function loadUI(){ try{ const s=JSON.parse(localStorage.getItem(UIKEY)); if(s) uiState=Object.assign(uiState,s); }catch(e){} } // UI NEW
+
 (function(){
   // --- Elements ---
   const boardEl = document.getElementById('board');
@@ -310,6 +348,11 @@ function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s
   const diffRow = document.getElementById('diffRow');
   const winlineEl = document.getElementById('winline');
   const hintEl = document.getElementById('hint');
+  const trackSel=document.getElementById('trackSel'); // UI NEW
+  const playBtn=document.getElementById('playBtn'); // UI NEW
+  const musicVol=document.getElementById('musicVol'); // UI NEW
+  const previewBtn=document.getElementById('previewBtn'); // UI NEW
+  const fxBtn=document.getElementById('fxBtn'); // UI NEW
   const muteBtn = document.getElementById('muteBtn');
   const musicBtn = document.getElementById('musicBtn');
   const tapAudio = document.getElementById('tapAudio');
@@ -320,6 +363,16 @@ function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s
   const scoreStatsEl = document.getElementById('scoreStats');
   const scoreResetBtn = document.getElementById('scoreReset');
   const playerLevelEl = document.getElementById('playerLevel'); /* NEW */
+
+  loadAudio(); // MUSIC NEW
+  loadUI(); // UI NEW
+  trackSel.value=audioState.track; // UI NEW
+  musicVol.value=audioState.vol; // UI NEW
+  musicBtn.textContent=audioState.enabled?'ON':'OFF'; // UI NEW
+  musicEnabled=audioState.enabled; // MUSIC NEW
+  sfxMuted=!audioState.sfx; muteBtn.textContent=audioState.sfx?'ON':'OFF'; // MUSIC NEW
+  fxBtn.textContent=uiState.fx?'ON':'OFF'; // UI NEW
+  if(uiState.fx) document.body.classList.add('lowfx'); // UI NEW
   const xpProgressEl = document.getElementById('xpProgress'); /* NEW */
   const menuBtn = document.getElementById('menuBtn');
   const menu = document.getElementById('menu');
@@ -330,14 +383,19 @@ function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s
   const bgSel = document.getElementById('bgSel');
   const gridSizeSel = document.getElementById('gridSize');
 
-  menuBtn.addEventListener('click', ()=>{ menu.classList.add('open'); menuOverlay.classList.add('show'); });
-  function closeMenu(){ menu.classList.remove('open'); menuOverlay.classList.remove('show'); }
+  menuBtn.addEventListener('click', ()=>{ menu.classList.add('open'); menuOverlay.classList.add('show'); menuBtn.setAttribute('aria-expanded','true'); }); // UI NEW
+  function closeMenu(){ menu.classList.remove('open'); menuOverlay.classList.remove('show'); menuBtn.setAttribute('aria-expanded','false'); } // UI NEW
   menuClose.addEventListener('click', closeMenu);
   menuOverlay.addEventListener('click', closeMenu);
-  xColorInput.addEventListener('input', e=>document.documentElement.style.setProperty('--xColor', e.target.value));
-  oColorInput.addEventListener('input', e=>document.documentElement.style.setProperty('--oColor', e.target.value));
-  bgSel.addEventListener('change', e=>{ document.body.classList.remove('bg-black','bg-gray','bg-neon'); document.body.classList.add('bg-'+e.target.value); });
-  gridSizeSel.addEventListener('change', e=>{ const v=e.target.value; if(v==='compact'){ document.documentElement.style.setProperty('--cell-gap','8px'); document.documentElement.style.setProperty('--cell-font','clamp(40px,7vw,70px)'); } else if(v==='large'){ document.documentElement.style.setProperty('--cell-gap','16px'); document.documentElement.style.setProperty('--cell-font','clamp(60px,9vw,88px)'); } else { document.documentElement.style.setProperty('--cell-gap','12px'); document.documentElement.style.setProperty('--cell-font','clamp(48px,8.5vw,78px)'); } });
+  xColorInput.value=uiState.xColor; document.documentElement.style.setProperty('--xColor', uiState.xColor); // UI NEW
+  oColorInput.value=uiState.oColor; document.documentElement.style.setProperty('--oColor', uiState.oColor); // UI NEW
+  bgSel.value=uiState.bg; document.body.classList.add('bg-'+uiState.bg); // UI NEW
+  gridSizeSel.value=uiState.grid; applyGridSize(uiState.grid); // UI NEW
+  xColorInput.addEventListener('input', e=>{ document.documentElement.style.setProperty('--xColor', e.target.value); uiState.xColor=e.target.value; saveUI(); }); // UI NEW
+  oColorInput.addEventListener('input', e=>{ document.documentElement.style.setProperty('--oColor', e.target.value); uiState.oColor=e.target.value; saveUI(); }); // UI NEW
+  bgSel.addEventListener('change', e=>{ document.body.classList.remove('bg-black','bg-gray','bg-neon'); document.body.classList.add('bg-'+e.target.value); uiState.bg=e.target.value; saveUI(); }); // UI NEW
+  function applyGridSize(v){ if(v==='compact'){ document.documentElement.style.setProperty('--cell-gap','8px'); document.documentElement.style.setProperty('--cell-font','clamp(40px,7vw,70px)'); } else if(v==='large'){ document.documentElement.style.setProperty('--cell-gap','16px'); document.documentElement.style.setProperty('--cell-font','clamp(60px,9vw,88px)'); } else { document.documentElement.style.setProperty('--cell-gap','12px'); document.documentElement.style.setProperty('--cell-font','clamp(48px,8.5vw,78px)'); } } // UI NEW
+  gridSizeSel.addEventListener('change', e=>{ applyGridSize(e.target.value); uiState.grid=e.target.value; saveUI(); }); // UI NEW
 
   // FX layers
   const fxWin = document.getElementById('fxWin');
@@ -397,7 +455,7 @@ function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s
       audioCtx=new (window.AudioContext||window.webkitAudioContext)();
       rootGain=audioCtx.createGain(); rootGain.gain.value=.9; rootGain.connect(audioCtx.destination);
       sfxGain=audioCtx.createGain(); sfxGain.gain.value=sfxMuted?0:1; sfxGain.connect(rootGain);
-      musicGain=audioCtx.createGain(); musicGain.gain.value=musicEnabled?.45:0; musicGain.connect(rootGain);
+      musicGain=audioCtx.createGain(); musicGain.gain.value=musicEnabled?audioState.vol:0; musicGain.connect(rootGain); // MUSIC NEW
       return true;
     }catch(e){return false;} }
   function envTone(bus, f, {dur=.2,type='triangle',vol=.25,attack=.01,rel=.15,delay=0,det=0,pan=0}={}){
@@ -414,73 +472,68 @@ function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s
   function padDraw(){ if(!ensureAudio())return; const t=audioCtx.currentTime; const noise=audioCtx.createBuffer(1,audioCtx.sampleRate*1.2,audioCtx.sampleRate), d=noise.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2); const src=audioCtx.createBufferSource(); src.buffer=noise; const bi=audioCtx.createBiquadFilter(); bi.type='lowpass'; bi.frequency.value=6500; bi.frequency.exponentialRampToValueAtTime(900,t+1.1); const g=audioCtx.createGain(); g.gain.value=.0001; g.gain.exponentialRampToValueAtTime(.45,t+.06); g.gain.exponentialRampToValueAtTime(.0001,t+1.2); src.connect(bi); bi.connect(sfxGain); src.start(t); }
   function coin(){ if(!ensureAudio())return; const t=audioCtx.currentTime; const o=audioCtx.createOscillator(); o.type='square'; o.frequency.setValueAtTime(880,t); o.frequency.exponentialRampToValueAtTime(1320,t+0.08); const g=audioCtx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.3,t+.01); g.gain.exponentialRampToValueAtTime(0.0001,t+.25); o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+.3); }
 
-  /* === Colonna sonora morbida: progressione C–G–Am–F, 100 BPM === */ /* NEW */
-  let musicInterval=null, nextNoteTime=0, currentStep=0;
-  const tempo=100, stepsPerBar=16, bars=4, totalSteps=stepsPerBar*bars, lookahead=.1, tick=25;
+  // ---------- MUSIC ENGINE ---------- // MUSIC NEW
+  let musicInterval=null, nextNoteTime=0, currentStep=0, tempo=120, totalSteps=16; // MUSIC NEW
+  const lookahead=.1, tick=25; // MUSIC NEW
 
-  // scala helper
-  function n2f(n){ if(!n) return null; const M={'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11}; const m=n.match(/^([A-G][b#]?)(\d)$/); if(!m) return null; const semi=M[m[1]], oct=+m[2]; return 440*Math.pow(2,(semi+(oct-4)*12-9)/12);}
+  function n2f(n){ if(!n) return null; const M={'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11}; const m=n.match(/^([A-G][b#]?)(\d)$/); if(!m) return null; const semi=M[m[1]], oct=+m[2]; return 440*Math.pow(2,(semi+(oct-4)*12-9)/12); } // MUSIC NEW
 
-  // Melodia principale (Do maggiore, frasi morbide)
-  const MEL = [
-    'E5',, 'G5',, 'A5',, 'G5',,  'E5',, 'D5',, 'C5',, 'D5',,
-    'E5',, 'G5',, 'A5',, 'G5',,  'E5',, 'G5',, 'C6',, , , , ,
-    'C6',, 'B5',, 'A5',, 'G5',,  'E5',, 'G5',, 'A5',, 'G5',,
-    'F5',, 'E5',, 'D5',, 'C5',,  'G5',, 'E5',, 'C5',, , , , ,
-  ];
-
-  // Basso su ogni 1/4: C2–G2–A2–F2
-  const BASS=Array(totalSteps).fill(null).map((_,i)=>{
-    const beat = i%16;
-    if(beat%4!==0) return null;
-    const bar = Math.floor(i/16)%4;
-    return ['C2','G2','A2','F2'][bar];
-  });
-
-  // Kick su 1 e 3, Snare su 2 e 4, Hat su 1/8
-  const HAT = Array(totalSteps).fill(null).map((_,i)=> (i%2===0));
-  const KICK= Array(totalSteps).fill(false).map((_,i)=> (i%16===0 || i%16===8));
-  const SNARE=Array(totalSteps).fill(false).map((_,i)=> (i%16===4 || i%16===12));
-
-  function scheduleStep(step,time){
-    const m=MEL[step];
-      if(m){ const f=n2f(m); if(f) envTone(musicGain,f,{type:'sine',vol:.22,dur:.22,attack:.01,rel:.2}); }
-    const b=BASS[step];
-      if(b){ const f=n2f(b); if(f) envTone(musicGain,f,{type:'sine',vol:.25,dur:.4,attack:.02,rel:.3,pan:-.1}); }
-      if(HAT[step]) scheduleHat(time);
-      if(KICK[step]) scheduleKick(time);
-      if(SNARE[step]) scheduleSnare(time);
-  }
-  function scheduleHat(t){
-      const buffer=audioCtx.createBuffer(1, audioCtx.sampleRate*0.03, audioCtx.sampleRate);
-      const ch=buffer.getChannelData(0); for(let i=0;i<ch.length;i++){ ch[i]=(Math.random()*2-1)*(1-i/ch.length); }
-      const src=audioCtx.createBufferSource(); src.buffer=buffer;
-      const hp=audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000;
-      const g=audioCtx.createGain(); g.gain.value=0.06;
-      src.connect(hp); hp.connect(g); g.connect(musicGain); src.start(t);
+  const TRACKS={ // NEW CONFIG
+    chiptune:{tempo:132,
+      mel:['E5',null,'G5',null,'A5',null,'G5',null,'E5',null,'D5',null,'C5',null,'D5',null],
+      bass:['C2',null,null,null,'G2',null,null,null,'A2',null,null,null,'F2',null,null,null],
+      hat:Array(16).fill(0).map((_,i)=>i%2===0),
+      kick:Array(16).fill(0).map((_,i)=>i%16===0||i%16===8),
+      snare:Array(16).fill(0).map((_,i)=>i%16===4||i%16===12)
+    },
+    retro:{tempo:120,
+      mel:['E5','G5','B5','G5','E5','G5','B5','G5','D5','F#5','A5','F#5','D5','F#5','A5','F#5'],
+      bass:Array(16).fill(null).map((_,i)=>(i%4===0)?'E2':null),
+      hat:Array(16).fill(0).map((_,i)=>i%2===0),
+      kick:Array(16).fill(0).map((_,i)=>i%8===0),
+      snare:Array(16).fill(0).map((_,i)=>i%8===4)
+    },
+    lofi:{tempo:90,
+      mel:['D5',null,'F5',null,'G5',null,'F5',null,'D5',null,'C5',null,'A4',null,'C5',null],
+      bass:Array(16).fill(null).map((_,i)=>(i%4===0)?'D2':null),
+      hat:Array(16).fill(0).map((_,i)=>i%3===0),
+      kick:Array(16).fill(0).map((_,i)=>i%16===0||i%16===8),
+      snare:Array(16).fill(0).map((_,i)=>i%16===10)
+    },
+    arcade:{tempo:150,
+      mel:['A5','B5','C6','B5','A5','G5','A5','G5','F5','E5','F5','E5','D5','C5','D5','C5'],
+      bass:Array(16).fill(null).map((_,i)=>(i%2===0)?'A2':null),
+      hat:Array(16).fill(true),
+      kick:Array(16).fill(0).map((_,i)=>i%4===0),
+      snare:Array(16).fill(0).map((_,i)=>i%8===4)
+    },
+    synthwave:{tempo:100,
+      mel:['C5',null,'F5',null,'G5',null,'F5',null,'C5',null,'D#5',null,'F5',null,'G5',null],
+      bass:Array(16).fill(null).map((_,i)=>(i%4===0)?'F2':null),
+      hat:Array(16).fill(0).map((_,i)=>i%2===0),
+      kick:Array(16).fill(0).map((_,i)=>i%4===0),
+      snare:Array(16).fill(0).map((_,i)=>i%8===4)
     }
-  function scheduleKick(t){
-      const o=audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(80,t); o.frequency.exponentialRampToValueAtTime(40,t+0.2);
-      const g=audioCtx.createGain(); g.gain.setValueAtTime(.2,t); g.gain.exponentialRampToValueAtTime(0.0001,t+.3);
-      o.connect(g); g.connect(musicGain); o.start(t); o.stop(t+.16);
-    }
-  function scheduleSnare(t){
-      const buffer=audioCtx.createBuffer(1, audioCtx.sampleRate*0.12, audioCtx.sampleRate);
-      const ch=buffer.getChannelData(0); for(let i=0;i<ch.length;i++){ ch[i]=(Math.random()*2-1)*Math.pow(1-i/ch.length,2); }
-      const src=audioCtx.createBufferSource(); src.buffer=buffer;
-      const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200; bp.Q.value=0.8;
-      const g=audioCtx.createGain(); g.gain.value=0.14;
-      src.connect(bp); bp.connect(g); g.connect(musicGain); src.start(t);
-    }
-  function nextStep(){ const sps=(60/tempo)/4; nextNoteTime+=sps; currentStep=(currentStep+1)%totalSteps; }
-  function scheduler(){ if(!audioCtx) return; while(nextNoteTime < audioCtx.currentTime+lookahead){ scheduleStep(currentStep,nextNoteTime); nextStep(); } }
-  function startMusic(){ if(!ensureAudio()||musicInterval) return; nextNoteTime=audioCtx.currentTime+.05; currentStep=0; musicInterval=setInterval(scheduler,tick); }
-  function stopMusic(){ if(musicInterval){ clearInterval(musicInterval); musicInterval=null; } }
+  }; // MUSIC NEW
+
+  function setTrack(name){ const t=TRACKS[name]; if(!t) return; tempo=t.tempo; totalSteps=t.mel.length; currentStep=0; } // MUSIC NEW
+
+  function scheduleStep(step,time){ const t=TRACKS[audioState.track]; const m=t.mel[step]; if(m){ const f=n2f(m); if(f) envTone(musicGain,f,{type:'square',vol:.22,dur:.2,attack:.01,rel:.15}); } const b=t.bass[step]; if(b){ const f=n2f(b); if(f) envTone(musicGain,f,{type:'triangle',vol:.25,dur:.4,attack:.02,rel:.3,pan:-.1}); } if(t.hat[step]) scheduleHat(time); if(t.kick[step]) scheduleKick(time); if(t.snare[step]) scheduleSnare(time); } // MUSIC NEW
+
+  function scheduleHat(t){ const buffer=audioCtx.createBuffer(1, audioCtx.sampleRate*0.03, audioCtx.sampleRate); const ch=buffer.getChannelData(0); for(let i=0;i<ch.length;i++){ ch[i]=(Math.random()*2-1)*(1-i/ch.length); } const src=audioCtx.createBufferSource(); src.buffer=buffer; const hp=audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000; const g=audioCtx.createGain(); g.gain.value=0.06; src.connect(hp); hp.connect(g); g.connect(musicGain); src.start(t); } // MUSIC NEW
+  function scheduleKick(t){ const o=audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(80,t); o.frequency.exponentialRampToValueAtTime(40,t+0.2); const g=audioCtx.createGain(); g.gain.setValueAtTime(.2,t); g.gain.exponentialRampToValueAtTime(0.0001,t+.3); o.connect(g); g.connect(musicGain); o.start(t); o.stop(t+.16); } // MUSIC NEW
+  function scheduleSnare(t){ const buffer=audioCtx.createBuffer(1, audioCtx.sampleRate*0.12, audioCtx.sampleRate); const ch=buffer.getChannelData(0); for(let i=0;i<ch.length;i++){ ch[i]=(Math.random()*2-1)*Math.pow(1-i/ch.length,2); } const src=audioCtx.createBufferSource(); src.buffer=buffer; const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200; bp.Q.value=0.8; const g=audioCtx.createGain(); g.gain.value=0.14; src.connect(bp); bp.connect(g); g.connect(musicGain); src.start(t); } // MUSIC NEW
+
+  function nextStep(){ const sps=(60/tempo)/4; nextNoteTime+=sps; currentStep=(currentStep+1)%totalSteps; } // MUSIC NEW
+  function scheduler(){ if(!audioCtx) return; while(nextNoteTime < audioCtx.currentTime+lookahead){ scheduleStep(currentStep,nextNoteTime); nextStep(); } } // MUSIC NEW
+  function startMusic(){ if(!ensureAudio()||musicInterval) return; setTrack(audioState.track); nextNoteTime=audioCtx.currentTime+.05; musicInterval=setInterval(scheduler,tick); playBtn.textContent='⏸'; } // MUSIC NEW
+  function stopMusic(){ if(musicInterval){ clearInterval(musicInterval); musicInterval=null; } playBtn.textContent='▶︎'; } // MUSIC NEW
+  function switchTrack(name){ if(audioState.track===name) return; audioState.track=name; saveAudio(); if(!ensureAudio()) return; const now=audioCtx.currentTime; musicGain.gain.cancelScheduledValues(now); musicGain.gain.linearRampToValueAtTime(0,now+.3); setTimeout(()=>{ setTrack(name); if(musicEnabled){ musicGain.gain.setValueAtTime(0,audioCtx.currentTime); musicGain.gain.linearRampToValueAtTime(audioState.vol,audioCtx.currentTime+.3); } },300); } // MUSIC NEW
 
   document.addEventListener('DOMContentLoaded', async ()=>{ // NEW
     loadScore();
     const ok=ensureAudio(); if(!ok) return;
-    try{ if(audioCtx.state==='suspended') await audioCtx.resume(); startMusic(); tapAudio.classList.remove('show'); } // NEW
+    try{ if(audioCtx.state==='suspended') await audioCtx.resume(); if(audioState.enabled){ startMusic(); } else { playBtn.textContent='▶︎'; } tapAudio.classList.remove('show'); } // MUSIC NEW
     catch(e){ tapAudio.classList.add('show'); }
   });
   window.addEventListener('load', ()=>{ const ld=document.getElementById('loader'); if(ld) ld.classList.add('hide'); });
@@ -488,12 +541,18 @@ function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s
     window.addEventListener(ev, ()=>{
       if(!audioCtx) ensureAudio();
       if(audioCtx && audioCtx.state!=='running'){
-        audioCtx.resume().then(()=>{ if(musicEnabled) startMusic(); tapAudio.classList.remove('show'); });
+        audioCtx.resume().then(()=>{ if(musicEnabled){ startMusic(); playBtn.textContent='⏸'; } tapAudio.classList.remove('show'); }); // MUSIC NEW
       }
     }, {once:true, passive:true});
   });
-  muteBtn.addEventListener('click', ()=>{ ensureAudio(); sfxMuted=!sfxMuted; if(sfxGain) sfxGain.gain.value=sfxMuted?0:1; muteBtn.textContent=sfxMuted?'OFF':'ON'; });
-  musicBtn.addEventListener('click', ()=>{ ensureAudio(); musicEnabled=!musicEnabled; if(musicGain) musicGain.gain.value=musicEnabled?.45:0; musicBtn.textContent=musicEnabled?'ON':'OFF'; if(musicEnabled) startMusic(); else stopMusic(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ stopMusic(); } else if(musicEnabled) startMusic(); }); // MUSIC NEW
+  muteBtn.addEventListener('click', ()=>{ ensureAudio(); sfxMuted=!sfxMuted; audioState.sfx=!sfxMuted; saveAudio(); if(sfxGain) sfxGain.gain.value=sfxMuted?0:1; muteBtn.textContent=sfxMuted?'OFF':'ON'; }); // MUSIC NEW
+  musicBtn.addEventListener('click', ()=>{ ensureAudio(); musicEnabled=!musicEnabled; audioState.enabled=musicEnabled; saveAudio(); if(musicGain) musicGain.gain.value=musicEnabled?audioState.vol:0; musicBtn.textContent=musicEnabled?'ON':'OFF'; if(musicEnabled) startMusic(); else stopMusic(); }); // MUSIC NEW
+  trackSel.addEventListener('change', ()=>{ ensureAudio(); switchTrack(trackSel.value); audioState.track=trackSel.value; saveAudio(); }); // MUSIC NEW
+  playBtn.addEventListener('click', ()=>{ ensureAudio(); if(musicInterval){ stopMusic(); playBtn.textContent='▶︎'; } else { startMusic(); playBtn.textContent='⏸'; } }); // MUSIC NEW
+  musicVol.addEventListener('input', ()=>{ ensureAudio(); audioState.vol=parseFloat(musicVol.value); if(musicGain) musicGain.gain.value=musicEnabled?audioState.vol:0; saveAudio(); }); // MUSIC NEW
+  previewBtn.addEventListener('click', ()=>{ ensureAudio(); const prev=audioState.track; switchTrack(trackSel.value); startMusic(); setTimeout(()=>{ stopMusic(); if(prev){ switchTrack(prev); if(audioState.enabled) startMusic(); } },5000); }); // MUSIC NEW
+  fxBtn.addEventListener('click', ()=>{ uiState.fx=!uiState.fx; fxBtn.textContent=uiState.fx?'ON':'OFF'; document.body.classList.toggle('lowfx',uiState.fx); saveUI(); }); // UI NEW
 
   // ---------- BOARD UI ----------
   function drawBoard(){ boardEl.innerHTML=''; for(let i=0;i<9;i++){ const btn=document.createElement('button'); btn.className='cell'; btn.dataset.idx=i; btn.addEventListener('click',()=>onCell(i)); boardEl.appendChild(btn); } updateUI(); }
@@ -746,8 +805,10 @@ function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s
   });
   firstSel.addEventListener('change', ()=>reset(false));
   diffSel.addEventListener('change', ()=>reset(false));
-  window.addEventListener('keydown', (e)=>{
+  window.addEventListener('keydown', (e)=>{ // UI NEW
     if(e.key==='n' || e.key==='N'){ e.preventDefault(); reset(false); return; }
+    if(e.key==='m' || e.key==='M'){ e.preventDefault(); muteBtn.click(); }
+    if(e.key==='p' || e.key==='P'){ e.preventDefault(); playBtn.click(); }
     const map={'7':0,'8':1,'9':2,'4':3,'5':4,'6':5,'1':6,'2':7,'3':8};
     if(map[e.key]!=null){ e.preventDefault(); const idx=map[e.key]; const cellBtn = boardEl.children[idx]; if(cellBtn && !cellBtn.disabled) cellBtn.click(); }
   });
