@@ -45,6 +45,8 @@
   .score .tag{padding:.2em .55em; border:1px solid #2b6a3a; border-radius:999px; background:#0c1a12; color:#a9ffb0}
   .score strong{color:#a9ffb0}
   .score .best{color:#4fe6ff}
+  .xpbar{width:80px;height:8px;border:1px solid #2b6a3a;border-radius:10px;background:#0c1a12;overflow:hidden;margin-left:4px} /* NEW */
+  .xpbar div{height:100%;background:#9aff9a;width:0%} /* NEW */
 
   /* Grid */
   .grid{display:grid;grid-template-columns:repeat(3,minmax(94px,1fr));gap:12px;width:min(560px,100%);margin:0 auto}
@@ -191,6 +193,8 @@
       <div class="label">⭐ Punteggio</div>
       <div class="controls">
         <div class="score" id="scoreBar">
+          <span class="tag">LVL: <strong id="playerLevel">1</strong></span> <!-- NEW -->
+          <div class="xpbar"><div id="xpProgress"></div></div> <!-- NEW -->
           <span class="tag">Tot: <strong id="scoreTotal">0</strong></span>
           <span class="tag">Best: <strong class="best" id="scoreBest">0</strong></span>
           <span class="tag">Streak: <strong id="scoreStreak">0</strong></span>
@@ -231,6 +235,23 @@
 <div id="scorePop" class="score-pop" aria-hidden="true">+0 XP</div>
 
 <script>
+/* NEW CONFIG */
+const CONFIG = {
+  xp:{ win:100, draw:30, lose:0 },
+  missions:[
+    {id:'win3hard', text:'Vinci 3 partite di fila in “Difficile”', target:3},
+    {id:'draw3', text:'Pareggia 3 partite in totale', target:3},
+    {id:'winSecond', text:'Vinci una partita iniziando per secondo', target:1},
+    {id:'blockLast', text:'Blocca una minaccia di tris all\'ultima mossa', target:1},
+    {id:'speedWin', text:'Vinci in < 10 secondi', target:1}
+  ]
+};
+const LSKEY = 'oxo_meta_v2';
+let score = { total:0,best:0,streak:0,stats:{w:0,d:0,l:0}, xp:0, level:1, missions:{}, badges:[] }; /* NEW */
+function levelCap(l){ return 200 + (l-1)*100; } /* NEW */
+function saveScore(){ try{ localStorage.setItem(LSKEY, JSON.stringify(score)); }catch(e){} } /* NEW */
+function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s&&typeof s.total==='number') score=Object.assign(score,s); }catch(e){} syncScoreUI(); syncLevelUI(); } /* NEW */
+
 (function(){
   // --- Elements ---
   const boardEl = document.getElementById('board');
@@ -251,6 +272,8 @@
   const scoreStreakEl = document.getElementById('scoreStreak');
   const scoreStatsEl = document.getElementById('scoreStats');
   const scoreResetBtn = document.getElementById('scoreReset');
+  const playerLevelEl = document.getElementById('playerLevel'); /* NEW */
+  const xpProgressEl = document.getElementById('xpProgress'); /* NEW */
 
   // FX layers
   const fxWin = document.getElementById('fxWin');
@@ -273,18 +296,17 @@
   let p1Sym = 'X', p2Sym = 'O';
 
   // ---------- SCORE ----------
-  const LSKEY = 'oxo3_scoring_v1';
-  let score = { total:0, best:0, streak:0, stats:{w:0,d:0,l:0} };
-  function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s&&typeof s.total==='number') score=s; }catch(e){} syncScoreUI(); }
-  function saveScore(){ try{ localStorage.setItem(LSKEY, JSON.stringify(score)); }catch(e){} }
+  // score object and load/save defined in config section // NEW
   function syncScoreUI(){ scoreTotalEl.textContent=Math.max(0,Math.floor(score.total)); scoreBestEl.textContent=Math.max(0,Math.floor(score.best)); scoreStreakEl.textContent=score.streak; scoreStatsEl.textContent=`W:${score.stats.w} D:${score.stats.d} L:${score.stats.l}`; }
-  function resetScore(){ score={total:0,best:0,streak:0,stats:{w:0,d:0,l:0}}; saveScore(); syncScoreUI(); popScore('Azzera',0,'#4fe6ff'); }
+  function resetScore(){ score={total:0,best:0,streak:0,stats:{w:0,d:0,l:0},xp:0,level:1,missions:{},badges:[]}; saveScore(); syncScoreUI(); syncLevelUI(); popScore('Azzera',0,'#4fe6ff'); } /* NEW */
   scoreResetBtn.addEventListener('click', resetScore);
   function diffMult(){ return ({easy:1.0,hard:1.5,impossible:2.0})[diffSel.value]||1.0; }
   function underdogBonus(){ return (mode==='ai' && firstSel.value==='ai') ? 1.10 : 1.0; }
   function streakMult(){ return 1 + Math.min(score.streak,5)*0.2; }
   function baseFor(r){ return r==='win'?100 : r==='draw'?30 : 0; }
   function penaltyForLoss(){ return ({easy:15,hard:10,impossible:5})[diffSel.value]||0; }
+  function syncLevelUI(){ playerLevelEl.textContent=score.level; xpProgressEl.style.width=Math.min(100,(score.xp/levelCap(score.level))*100)+'%'; } /* NEW */
+  function addXP(val){ score.xp+=val; while(score.xp>=levelCap(score.level)){ score.xp-=levelCap(score.level); score.level++; popScore('LEVEL UP!',0,'#9aff9a'); } syncLevelUI(); } /* NEW */
   function award(result){
     if(mode!=='ai') return; // niente XP in PvP
     let delta=0;
@@ -296,6 +318,7 @@
     const extra = (score.streak>1 && result==='win') ? `Streak x${score.streak}!` : '';
     syncScoreUI();
     popScore(`+${Math.round(delta)} XP`, delta, (result==='win')?'#9aff9a':'#4fe6ff', extra);
+    addXP(Math.round(delta)); /* NEW */
     if(extra) comboSound(); /* NEW */
     saveScore();
   }
@@ -670,7 +693,6 @@
   diffSel.value='impossible';
   firstSel.value='ai';
   reset(false);
-  loadScore();
 })();
 </script>
 </body>
