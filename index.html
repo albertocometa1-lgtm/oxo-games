@@ -52,6 +52,10 @@
     box-shadow:inset 0 0 26px rgba(0,0,0,.65), 0 0 10px rgba(154,255,154,.18);
     user-select:none;-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden}
   .cell:not(:disabled):active{transform:scale(.98)}
+  .cell.hit{animation:cellHit .3s ease-out}
+  .cell.hit::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 12px var(--ph);opacity:.8;animation:cellGlow .3s ease-out forwards}
+  @keyframes cellHit{0%{transform:scale(.8)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+  @keyframes cellGlow{0%{opacity:.8;transform:scale(0.6)}100%{opacity:0;transform:scale(1.4)}}
   .hint{margin-top:10px;opacity:.9;font-size:.92rem;text-align:center}
   .winline{position:absolute;height:7px;background:var(--ph);border-radius:7px; box-shadow:0 0 12px rgba(154,255,154,1),0 0 24px rgba(154,255,154,.6); transform-origin:left center}
 
@@ -67,6 +71,23 @@
   @keyframes loseFlash{0%{opacity:0}15%{opacity:.45}60%{opacity:.12}100%{opacity:0}}
   .tilt{transform:perspective(1200px) rotateX(4deg) rotateY(-3deg) scale(1.02); transition:transform .4s ease}
   .blink{animation:blink 1s infinite} @keyframes blink{50%{opacity:.45}}
+
+  /* FX messages */
+  #fxWin .fx-msg,#fxLose .fx-msg,#fxDraw .fx-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(32px,8vw,80px);font-weight:900;opacity:0;text-shadow:0 0 20px currentColor,0 0 40px currentColor}
+  #fxWin.active .fx-msg,#fxLose.active .fx-msg,#fxDraw.active .fx-msg{animation:msgPop 1600ms ease forwards}
+  #fxWin .fx-msg{color:var(--win)}#fxLose .fx-msg{color:var(--lose)}#fxDraw .fx-msg{color:var(--draw)}
+  @keyframes msgPop{0%{opacity:0;transform:scale(.8)}20%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
+
+  /* Score particles */
+  .spark{position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor,0 0 12px currentColor;pointer-events:none;animation:spark 700ms ease-out forwards}
+  @keyframes spark{from{opacity:1;transform:translate(-50%,-50%)}to{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(0.2)}}
+
+  /* Loader */
+  #loader{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden}
+  #loader .scan{width:100%;height:100%;background:repeating-linear-gradient(0deg,rgba(154,255,154,.15)0 2px,transparent 2px 4px);animation:scanFade 1600ms ease forwards}
+  @keyframes scanFade{0%{opacity:0}10%{opacity:1}90%{opacity:1}100%{opacity:0}}
+  #loader.hide{animation:loaderHide 600ms forwards}
+  @keyframes loaderHide{to{opacity:0;visibility:hidden}}
 
   /* Audio banner */
   #tapAudio{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0) + 10px);
@@ -95,9 +116,14 @@
     .setting.full{grid-column:1/-1}
     .status-row{grid-column:4/-1; justify-content:end}
   }
+  @media (max-width:480px){
+    .grid{gap:8px}
+    .cell{font-size:18vw}
+  }
 </style>
 </head>
 <body>
+<div id="loader"><div class="scan"></div></div>
 <div class="wrap">
   <header>
     <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
@@ -175,11 +201,13 @@
     <canvas id="confetti" class="fx-canvas"></canvas>
     <canvas id="winRays"  class="fx-canvas"></canvas>
     <canvas id="winShock" class="fx-canvas"></canvas>
+    <div class="fx-msg">VITTORIA!</div>
   </div>
-  <div id="fxLose" class="fx-layer"><div id="loseFlash"></div></div>
+  <div id="fxLose" class="fx-layer"><div id="loseFlash"></div><div class="fx-msg">SCONFITTA</div></div>
   <div id="fxDraw" class="fx-layer">
     <canvas id="matrix" class="fx-canvas"></canvas>
     <div id="drawSweep"></div>
+    <div class="fx-msg">PARITÀ</div>
   </div>
 
   <section id="crt" class="crt" aria-label="Schermo CRT">
@@ -255,11 +283,13 @@
     else { score.streak=0; score.stats.l++; score.total=Math.max(0, score.total-penaltyForLoss()); syncScoreUI(); popScore(`-${penaltyForLoss()} XP`, -penaltyForLoss(), '#ff9a9a'); saveScore(); return; }
     score.total += Math.round(delta);
     score.best = Math.max(score.best, score.total);
-    syncScoreUI(); popScore(`+${Math.round(delta)} XP`, delta, (result==='win')?'#9aff9a':'#4fe6ff'); saveScore();
+    const extra = (score.streak>1 && result==='win') ? `Streak x${score.streak}!` : '';
+    syncScoreUI(); popScore(`+${Math.round(delta)} XP`, delta, (result==='win')?'#9aff9a':'#4fe6ff', extra); saveScore();
   }
-  function popScore(txt, delta, color='#9aff9a'){ scorePop.textContent=txt; scorePop.style.borderColor=color; scorePop.style.boxShadow=`0 20px 40px rgba(0,0,0,.45), 0 0 24px ${color}55`; scorePop.classList.remove('show'); void scorePop.offsetWidth; scorePop.classList.add('show'); if(delta>0) coin(); }
+  function popScore(txt, delta, color='#9aff9a', extra=''){ scorePop.innerHTML=extra?`${txt}<br><small>${extra}</small>`:txt; scorePop.style.borderColor=color; scorePop.style.boxShadow=`0 20px 40px rgba(0,0,0,.45), 0 0 24px ${color}55`; scorePop.classList.remove('show'); void scorePop.offsetWidth; scorePop.classList.add('show'); emitParticles(color); if(delta>0) coin(); }
+  function emitParticles(color){ for(let i=0;i<18;i++){ const s=document.createElement('span'); s.className='spark'; const ang=Math.random()*Math.PI*2, dist=40+Math.random()*40; s.style.color=color; s.style.setProperty('--x', `${Math.cos(ang)*dist}px`); s.style.setProperty('--y', `${Math.sin(ang)*dist}px`); scorePop.appendChild(s); s.addEventListener('animationend',()=>s.remove()); } }
 
-  // ---------- AUDIO (SFX + MUSICA 8-bit) ----------
+  // ---------- AUDIO (SFX + COLONNA SONORA) ----------
   let audioCtx=null, sfxGain, musicGain, rootGain;
   let sfxMuted=false, musicEnabled=true;
   function ensureAudio(){ if(audioCtx) return true; try{
@@ -283,14 +313,14 @@
   function padDraw(){ if(!ensureAudio())return; const t=audioCtx.currentTime; const noise=audioCtx.createBuffer(1,audioCtx.sampleRate*1.2,audioCtx.sampleRate), d=noise.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2); const src=audioCtx.createBufferSource(); src.buffer=noise; const bi=audioCtx.createBiquadFilter(); bi.type='lowpass'; bi.frequency.value=6500; bi.frequency.exponentialRampToValueAtTime(900,t+1.1); const g=audioCtx.createGain(); g.gain.value=.0001; g.gain.exponentialRampToValueAtTime(.45,t+.06); g.gain.exponentialRampToValueAtTime(.0001,t+1.2); src.connect(bi); bi.connect(sfxGain); src.start(t); }
   function coin(){ if(!ensureAudio())return; const t=audioCtx.currentTime; const o=audioCtx.createOscillator(); o.type='square'; o.frequency.setValueAtTime(880,t); o.frequency.exponentialRampToValueAtTime(1320,t+0.08); const g=audioCtx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.3,t+.01); g.gain.exponentialRampToValueAtTime(0.0001,t+.25); o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+.3); }
 
-  /* === Nuova MUSICA: chiptune allegra (C–G–Am–F), 132 BPM === */
+  /* === Colonna sonora morbida: progressione C–G–Am–F, 100 BPM === */
   let musicInterval=null, nextNoteTime=0, currentStep=0;
-  const tempo=132, stepsPerBar=16, bars=4, totalSteps=stepsPerBar*bars, lookahead=.1, tick=25;
+  const tempo=100, stepsPerBar=16, bars=4, totalSteps=stepsPerBar*bars, lookahead=.1, tick=25;
 
   // scala helper
   function n2f(n){ if(!n) return null; const M={'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11}; const m=n.match(/^([A-G][b#]?)(\d)$/); if(!m) return null; const semi=M[m[1]], oct=+m[2]; return 440*Math.pow(2,(semi+(oct-4)*12-9)/12);}
 
-  // Melodia principale (Do maggiore, frasi brevi e luminose)
+  // Melodia principale (Do maggiore, frasi morbide)
   const MEL = [
     'E5',, 'G5',, 'A5',, 'G5',,  'E5',, 'D5',, 'C5',, 'D5',,
     'E5',, 'G5',, 'A5',, 'G5',,  'E5',, 'G5',, 'C6',, , , , ,
@@ -313,34 +343,34 @@
 
   function scheduleStep(step,time){
     const m=MEL[step];
-    if(m){ const f=n2f(m); if(f) envTone(musicGain,f,{type:'square',vol:.18,dur:.18,attack:.004,rel:.10}); }
+      if(m){ const f=n2f(m); if(f) envTone(musicGain,f,{type:'sine',vol:.22,dur:.22,attack:.01,rel:.2}); }
     const b=BASS[step];
-    if(b){ const f=n2f(b); if(f) envTone(musicGain,f,{type:'triangle',vol:.20,dur:.22,attack:.004,rel:.10,pan:-.1}); }
-    if(HAT[step]) scheduleHat(time);
-    if(KICK[step]) scheduleKick(time);
-    if(SNARE[step]) scheduleSnare(time);
+      if(b){ const f=n2f(b); if(f) envTone(musicGain,f,{type:'sine',vol:.25,dur:.4,attack:.02,rel:.3,pan:-.1}); }
+      if(HAT[step]) scheduleHat(time);
+      if(KICK[step]) scheduleKick(time);
+      if(SNARE[step]) scheduleSnare(time);
   }
   function scheduleHat(t){
-    const buffer=audioCtx.createBuffer(1, audioCtx.sampleRate*0.03, audioCtx.sampleRate);
-    const ch=buffer.getChannelData(0); for(let i=0;i<ch.length;i++){ ch[i]=(Math.random()*2-1)*(1-i/ch.length); }
-    const src=audioCtx.createBufferSource(); src.buffer=buffer;
-    const hp=audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=6000;
-    const g=audioCtx.createGain(); g.gain.value=0.12;
-    src.connect(hp); hp.connect(g); g.connect(musicGain); src.start(t);
-  }
+      const buffer=audioCtx.createBuffer(1, audioCtx.sampleRate*0.03, audioCtx.sampleRate);
+      const ch=buffer.getChannelData(0); for(let i=0;i<ch.length;i++){ ch[i]=(Math.random()*2-1)*(1-i/ch.length); }
+      const src=audioCtx.createBufferSource(); src.buffer=buffer;
+      const hp=audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000;
+      const g=audioCtx.createGain(); g.gain.value=0.06;
+      src.connect(hp); hp.connect(g); g.connect(musicGain); src.start(t);
+    }
   function scheduleKick(t){
-    const o=audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(40,t+0.12);
-    const g=audioCtx.createGain(); g.gain.setValueAtTime(.26,t); g.gain.exponentialRampToValueAtTime(0.0001,t+.15);
-    o.connect(g); g.connect(musicGain); o.start(t); o.stop(t+.16);
-  }
+      const o=audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(80,t); o.frequency.exponentialRampToValueAtTime(40,t+0.2);
+      const g=audioCtx.createGain(); g.gain.setValueAtTime(.2,t); g.gain.exponentialRampToValueAtTime(0.0001,t+.3);
+      o.connect(g); g.connect(musicGain); o.start(t); o.stop(t+.16);
+    }
   function scheduleSnare(t){
-    const buffer=audioCtx.createBuffer(1, audioCtx.sampleRate*0.12, audioCtx.sampleRate);
-    const ch=buffer.getChannelData(0); for(let i=0;i<ch.length;i++){ ch[i]=(Math.random()*2-1)*Math.pow(1-i/ch.length,2); }
-    const src=audioCtx.createBufferSource(); src.buffer=buffer;
-    const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1800; bp.Q.value=0.6;
-    const g=audioCtx.createGain(); g.gain.value=0.18;
-    src.connect(bp); bp.connect(g); g.connect(musicGain); src.start(t);
-  }
+      const buffer=audioCtx.createBuffer(1, audioCtx.sampleRate*0.12, audioCtx.sampleRate);
+      const ch=buffer.getChannelData(0); for(let i=0;i<ch.length;i++){ ch[i]=(Math.random()*2-1)*Math.pow(1-i/ch.length,2); }
+      const src=audioCtx.createBufferSource(); src.buffer=buffer;
+      const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1200; bp.Q.value=0.8;
+      const g=audioCtx.createGain(); g.gain.value=0.14;
+      src.connect(bp); bp.connect(g); g.connect(musicGain); src.start(t);
+    }
   function nextStep(){ const sps=(60/tempo)/4; nextNoteTime+=sps; currentStep=(currentStep+1)%totalSteps; }
   function scheduler(){ if(!audioCtx) return; while(nextNoteTime < audioCtx.currentTime+lookahead){ scheduleStep(currentStep,nextNoteTime); nextStep(); } }
   function startMusic(){ if(!ensureAudio()||musicInterval) return; nextNoteTime=audioCtx.currentTime+.05; currentStep=0; musicInterval=setInterval(scheduler,tick); }
@@ -352,6 +382,7 @@
     try{ if(audioCtx.state==='suspended') await audioCtx.resume(); startMusic(); tapAudio.classList.remove('show'); }
     catch(e){ tapAudio.classList.add('show'); }
   });
+  window.addEventListener('load', ()=>{ const ld=document.getElementById('loader'); if(ld) ld.classList.add('hide'); });
   ['pointerdown','touchstart','click'].forEach(ev=>{
     window.addEventListener(ev, ()=>{
       if(!audioCtx) ensureAudio();
@@ -465,6 +496,9 @@
   // ---------- INPUT ----------
   function onCell(i){
     if(!playing || board[i]) return;
+    const cellEl = boardEl.children[i];
+    cellEl.classList.add('hit');
+    setTimeout(()=>cellEl.classList.remove('hit'),300);
     if(mode==='ai'){
       if(turn!=='human') return;
       board[i]=humanSym; afterMove();
@@ -528,8 +562,9 @@
     const drops=Array(cols).fill(0).map(()=>Math.random()*H); const chars='01▌▍▎▏█░▒▓'; ctx.font=`${14*dpr}px monospace`;
     (function loop(){ ctx.fillStyle='rgba(0,0,0,0.15)'; ctx.fillRect(0,0,W,H); for(let i=0;i<drops.length;i++){ const txt=chars[Math.floor(Math.random()*chars.length)];
       ctx.fillStyle=`hsla(185,100%,60%,${0.7+Math.random()*0.3})`; ctx.fillText(txt,i*14*dpr,drops[i]*1.05); drops[i]+=12; if(drops[i]*1.05>H || Math.random()>.97) drops[i]=-20; } requestAnimationFrame(loop); })();
-    setTimeout(()=>{ fxDraw.classList.remove('active'); document.querySelector('.crt').classList.remove('tilt'); }, 1600);
-  }
+      setTimeout(()=>{ fxDraw.classList.remove('active'); document.querySelector('.crt').classList.remove('tilt'); }, 1600);
+    }
+    function startLoseFX(){ fxLose.classList.add('active'); document.querySelector('.crt').classList.add('tilt'); buzzLose(); setTimeout(()=>{ fxLose.classList.remove('active'); document.querySelector('.crt').classList.remove('tilt'); },1500); }
 
   // ---------- END & RESET ----------
   function end(w){
@@ -541,7 +576,7 @@
         : (w.player===p1Sym ? 'Vince Giocatore X! 🟢' : 'Vince Giocatore O! 🟢');
       setStatus(who);
       showWinLine(w.line);
-      if(mode==='ai'){ if(w.player===humanSym){ startWinFX(); award('win'); } else { buzzLose(); fxLose.classList.add('active'); setTimeout(()=>fxLose.classList.remove('active'),900); award('loss'); } }
+      if(mode==='ai'){ if(w.player===humanSym){ startWinFX(); award('win'); } else { startLoseFX(); award('loss'); } }
       else { startWinFX(); }
     }
   }
