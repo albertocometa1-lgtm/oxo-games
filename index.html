@@ -7,8 +7,16 @@
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 <style>
-  :root{ --ph:#9aff9a; --accent:#eaffef; --grid:#134924; --panel:#0f1b12; --panelB:#122317; --win:#3cff7a; --lose:#ff3c3c; --draw:#4fe6ff; }
+  :root{
+    --ph:#9aff9a; --accent:#eaffef; --grid:#134924; --panel:#0f1b12; --panelB:#122317;
+    --win:#3cff7a; --lose:#ff3c3c; --draw:#4fe6ff;
+    --xColor:#9aff9a; --oColor:#4fe6ff;
+    --cell-gap:12px; --cell-font:clamp(48px,8.5vw,78px);
+  }
   html,body{height:100%;margin:0;background:#000;color:var(--accent);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+  body.bg-black{background:#000}
+  body.bg-gray{background:#333}
+  body.bg-neon{background:#000}
   body{opacity:0;animation:bodyFade .8s ease-out forwards .2s} /* NEW */
   @keyframes bodyFade{to{opacity:1}} /* NEW */
   .wrap{max-width:980px;margin:0 auto;padding:clamp(12px,2.5vw,22px); padding-bottom:calc(env(safe-area-inset-bottom,0) + 12px)}
@@ -40,7 +48,7 @@
   .btn-primary{background:#133a22;border-color:#2b6a3a; box-shadow:0 0 12px rgba(154,255,154,.15)}
   .btn-wide{min-width:160px}
   .toggle{min-width:128px}
-  .statusbar{font-weight:900;color:var(--ph);text-shadow:0 0 8px rgba(154,255,154,.4); text-align:right;}
+  .statusbar{font-weight:900;color:var(--ph);text-shadow:0 0 8px rgba(154,255,154,.4); text-align:center; margin-bottom:12px;}
   .score{display:flex; gap:12px; align-items:center; font-weight:900; flex-wrap:wrap}
   .score .tag{padding:.2em .55em; border:1px solid #2b6a3a; border-radius:999px; background:#0c1a12; color:#a9ffb0}
   .score strong{color:#a9ffb0}
@@ -49,15 +57,17 @@
   .xpbar div{height:100%;background:#9aff9a;width:0%} /* NEW */
 
   /* Grid */
-  .grid{display:grid;grid-template-columns:repeat(3,minmax(94px,1fr));gap:12px;width:min(560px,100%);margin:0 auto}
-  .cell{aspect-ratio:1/1;display:grid;place-items:center;font-size:clamp(48px,8.5vw,78px);
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(94px,1fr));gap:var(--cell-gap);width:min(560px,100%);margin:0 auto}
+  .cell{aspect-ratio:1/1;display:grid;place-items:center;font-size:var(--cell-font);
     border:1px solid var(--grid);border-radius:14px;background:linear-gradient(180deg,rgba(8,16,10,.78),rgba(6,10,7,.9));
-    color:var(--ph);text-shadow:0 0 14px rgba(154,255,154,.5);
+    color:var(--xColor);text-shadow:0 0 14px currentColor;
     box-shadow:inset 0 0 26px rgba(0,0,0,.65), 0 0 10px rgba(154,255,154,.18);
     user-select:none;-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden}
   .cell:not(:disabled):active{transform:scale(.96)} /* NEW */
   .cell.hit{animation:cellHit .45s cubic-bezier(.2,.9,.4,1.4)} /* NEW */
-  .cell.hit::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 20px var(--ph);opacity:.9;animation:cellGlow .45s ease-out forwards} /* NEW */
+  .cell.hit::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 20px currentColor;opacity:.9;animation:cellGlow .45s ease-out forwards} /* NEW */
+  .cell.x{color:var(--xColor)}
+  .cell.o{color:var(--oColor)}
   @keyframes cellHit{0%{transform:scale(.6)}40%{transform:scale(1.2)}70%{transform:scale(.9)}100%{transform:scale(1)}} /* NEW */
   @keyframes cellGlow{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(1.6)}} /* NEW */
   .hint{margin-top:10px;opacity:.9;font-size:.92rem;text-align:center}
@@ -110,6 +120,18 @@
   .score-pop.show{animation:scorePop 1500ms cubic-bezier(.18,.89,.32,1.28)} /* NEW */
   @keyframes scorePop{0%{opacity:0; transform:translate(-50%,-50%) scale(.6)}10%{opacity:1; transform:translate(-50%,-50%) scale(1.1)}60%{opacity:1; transform:translate(-50%,-50%) scale(1)}100%{opacity:0; transform:translate(-50%,-60%) scale(1.2)}} /* NEW */
 
+  /* Menu overlay */
+  .menu-btn{position:fixed;top:12px;right:12px;z-index:1000;background:#133a22;border:1px solid #2b6a3a;border-radius:10px;padding:8px;cursor:pointer;box-shadow:0 0 12px rgba(154,255,154,.15)}
+  .menu-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .3s;z-index:900}
+  .menu-overlay.show{opacity:1;pointer-events:auto}
+  .menu{position:fixed;top:0;right:0;height:100vh;width:min(320px,80%);transform:translateX(100%);transition:transform .3s ease;z-index:1001;background:linear-gradient(180deg,var(--panel),var(--panelB));border-left:1px solid #2b6a3a;box-shadow:-10px 0 20px rgba(0,0,0,.4);padding:20px 14px;overflow-y:auto}
+  .menu.open{transform:translateX(0)}
+  .menu-close{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--accent);font-size:1.4rem;cursor:pointer}
+  .menu .settings{display:flex;flex-direction:column;gap:12px;margin-top:30px}
+  .menu .setting{width:100%;grid-template-columns:1fr;text-align:left}
+  .menu .setting .controls{justify-content:flex-start}
+  .newgame{display:flex;justify-content:center;margin:20px 0}
+
   /* Responsive: mobile centrato e comodo */
   @media (max-width:760px){
     header{justify-content:center}
@@ -134,24 +156,13 @@
   }
 </style>
 </head>
-<body>
+<body class="bg-neon">
 <div id="loader"><div class="scan"></div></div>
-<div class="wrap">
-  <header>
-    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
-      <circle class="g pulse" cx="24" cy="24" r="19"></circle>
-      <g class="g"><path d="M14 14 L34 34"></path><path d="M34 14 L14 34"></path></g>
-      <circle class="g scan" cx="24" cy="24" r="9"></circle>
-    </svg>
-    <h1>OXO - 3×3</h1>
-  </header>
-
+<button id="menuBtn" class="menu-btn" aria-label="Impostazioni">☰</button>
+<div id="menuOverlay" class="menu-overlay"></div>
+<aside id="menu" class="menu">
+  <button id="menuClose" class="menu-close" aria-label="Chiudi">✖</button>
   <section class="settings" role="group" aria-label="Impostazioni di gioco">
-    <div class="setting full">
-      <div class="label">🎮 Partita</div>
-      <div class="controls"><button id="newBtn" class="btn-primary btn-wide">Nuova partita</button></div>
-    </div>
-
     <div class="setting">
       <div class="label">👥 Modalità</div>
       <div class="controls">
@@ -193,8 +204,8 @@
       <div class="label">⭐ Punteggio</div>
       <div class="controls">
         <div class="score" id="scoreBar">
-          <span class="tag">LVL: <strong id="playerLevel">1</strong></span> <!-- NEW -->
-          <div class="xpbar"><div id="xpProgress"></div></div> <!-- NEW -->
+          <span class="tag">LVL: <strong id="playerLevel">1</strong></span>
+          <div class="xpbar"><div id="xpProgress"></div></div>
           <span class="tag">Tot: <strong id="scoreTotal">0</strong></span>
           <span class="tag">Best: <strong class="best" id="scoreBest">0</strong></span>
           <span class="tag">Streak: <strong id="scoreStreak">0</strong></span>
@@ -204,11 +215,41 @@
       </div>
     </div>
 
-    <div class="setting status-row">
-      <div class="label">📺 Stato</div>
-      <div class="controls"><div id="status" class="statusbar" aria-live="polite">Pronto.</div></div>
-    </div>
+    <details class="setting full">
+      <summary class="label">🎨 Personalizza tabellone</summary>
+      <div class="controls" style="flex-direction:column;gap:12px">
+        <label>Colore X <input type="color" id="xColor" value="#9aff9a"></label>
+        <label>Colore O <input type="color" id="oColor" value="#4fe6ff"></label>
+        <label>Sfondo
+          <select id="bgSel">
+            <option value="neon">Neon</option>
+            <option value="black">Nero</option>
+            <option value="gray">Grigio</option>
+          </select>
+        </label>
+        <label>Griglia
+          <select id="gridSize">
+            <option value="standard">Standard</option>
+            <option value="compact">Compatta</option>
+            <option value="large">Grande</option>
+          </select>
+        </label>
+      </div>
+    </details>
   </section>
+</aside>
+<div class="wrap">
+  <header>
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+      <circle class="g pulse" cx="24" cy="24" r="19"></circle>
+      <g class="g"><path d="M14 14 L34 34"></path><path d="M34 14 L14 34"></path></g>
+      <circle class="g scan" cx="24" cy="24" r="9"></circle>
+    </svg>
+    <h1>OXO - 3×3</h1>
+  </header>
+
+  <div class="newgame"><button id="newBtn" class="btn-primary btn-wide">Nuova partita</button></div>
+  <div id="status" class="statusbar" aria-live="polite">Pronto.</div>
 
   <!-- FX -->
   <div id="fxWin" class="fx-layer">
@@ -274,6 +315,23 @@ function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s
   const scoreResetBtn = document.getElementById('scoreReset');
   const playerLevelEl = document.getElementById('playerLevel'); /* NEW */
   const xpProgressEl = document.getElementById('xpProgress'); /* NEW */
+  const menuBtn = document.getElementById('menuBtn');
+  const menu = document.getElementById('menu');
+  const menuOverlay = document.getElementById('menuOverlay');
+  const menuClose = document.getElementById('menuClose');
+  const xColorInput = document.getElementById('xColor');
+  const oColorInput = document.getElementById('oColor');
+  const bgSel = document.getElementById('bgSel');
+  const gridSizeSel = document.getElementById('gridSize');
+
+  menuBtn.addEventListener('click', ()=>{ menu.classList.add('open'); menuOverlay.classList.add('show'); });
+  function closeMenu(){ menu.classList.remove('open'); menuOverlay.classList.remove('show'); }
+  menuClose.addEventListener('click', closeMenu);
+  menuOverlay.addEventListener('click', closeMenu);
+  xColorInput.addEventListener('input', e=>document.documentElement.style.setProperty('--xColor', e.target.value));
+  oColorInput.addEventListener('input', e=>document.documentElement.style.setProperty('--oColor', e.target.value));
+  bgSel.addEventListener('change', e=>{ document.body.classList.remove('bg-black','bg-gray','bg-neon'); document.body.classList.add('bg-'+e.target.value); });
+  gridSizeSel.addEventListener('change', e=>{ const v=e.target.value; if(v==='compact'){ document.documentElement.style.setProperty('--cell-gap','8px'); document.documentElement.style.setProperty('--cell-font','clamp(40px,7vw,70px)'); } else if(v==='large'){ document.documentElement.style.setProperty('--cell-gap','16px'); document.documentElement.style.setProperty('--cell-font','clamp(60px,9vw,88px)'); } else { document.documentElement.style.setProperty('--cell-gap','12px'); document.documentElement.style.setProperty('--cell-font','clamp(48px,8.5vw,78px)'); } });
 
   // FX layers
   const fxWin = document.getElementById('fxWin');
@@ -437,6 +495,8 @@ function loadScore(){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s
     const cells=[...boardEl.children];
     for(let i=0;i<9;i++){
       cells[i].textContent = board[i] || '';
+      cells[i].classList.toggle('x', board[i]==='X');
+      cells[i].classList.toggle('o', board[i]==='O');
       if(mode==='ai'){ cells[i].disabled = !playing || !!board[i] || (turn!=='human'); }
       else           { cells[i].disabled = !playing || !!board[i]; }
     }
