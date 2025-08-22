@@ -8,7 +8,6 @@
 <link rel="manifest" href="./manifest.webmanifest"> <!-- PWA -->
 <meta name="apple-mobile-web-app-capable" content="yes"> <!-- PWA -->
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> <!-- PWA -->
-<link rel="apple-touch-icon" href="./icon-192.png"> <!-- PWA -->
 
 <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 <style>
@@ -836,6 +835,13 @@ if ('serviceWorker' in navigator) {
 let deferredPrompt;
 const installBanner = document.getElementById('installBanner');
 const installBtn = document.getElementById('installBtn');
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (isIos && !isStandalone) {
+    installBanner.hidden = false;
+    installBanner.textContent = "Per installare, usa Condividi → Aggiungi a Home";
+  }
+
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
