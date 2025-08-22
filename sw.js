@@ -1,5 +1,5 @@
 // PWA: Service Worker
-const CACHE_VERSION = 'v2'; // PWA
+const CACHE_VERSION = 'v6'; // PWA
 const STATIC_CACHE  = `static-${CACHE_VERSION}`; // PWA
 const PRECACHE_URLS = [
   './',
