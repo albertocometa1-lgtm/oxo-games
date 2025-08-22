@@ -337,50 +337,55 @@ function saveUI(){ try{ localStorage.setItem(UIKEY, JSON.stringify(uiState)); }c
 function loadUI(){ try{ const s=JSON.parse(localStorage.getItem(UIKEY)); if(s) uiState=Object.assign(uiState,s); }catch(e){} } // UI NEW
 
 (function(){
-  // --- Elements ---
-  const boardEl = document.getElementById('board');
-  const statusEl = document.getElementById('status');
-  const newBtn = document.getElementById('newBtn');
-  const modeSel = document.getElementById('modeSel');
-  const firstSel = document.getElementById('firstSel');
-  const diffSel = document.getElementById('diffSel');
-  const diffRow = document.getElementById('diffRow');
-  const winlineEl = document.getElementById('winline');
-  const hintEl = document.getElementById('hint');
-  const trackSel=document.getElementById('trackSel'); // UI NEW
-  const playBtn=document.getElementById('playBtn'); // UI NEW
-  const musicVol=document.getElementById('musicVol'); // UI NEW
-  const previewBtn=document.getElementById('previewBtn'); // UI NEW
-  const fxBtn=document.getElementById('fxBtn'); // UI NEW
-  const muteBtn = document.getElementById('muteBtn');
-  const musicBtn = document.getElementById('musicBtn');
-  const tapAudio = document.getElementById('tapAudio');
-  const scorePop = document.getElementById('scorePop');
-  const scoreTotalEl = document.getElementById('scoreTotal');
-  const scoreBestEl = document.getElementById('scoreBest');
-  const scoreStreakEl = document.getElementById('scoreStreak');
-  const scoreStatsEl = document.getElementById('scoreStats');
-  const scoreResetBtn = document.getElementById('scoreReset');
-  const playerLevelEl = document.getElementById('playerLevel'); /* NEW */
+  let sfxMuted=false, musicEnabled=true;
+  function $(id){ const el=document.getElementById(id); if(!el) console.error('[MISSING]', id); return el; }
+  document.addEventListener('DOMContentLoaded',()=>{
+    try{
+      console.log('[BOOT] DOM ready');
+      // --- Elements ---
+      const boardEl = $('board');
+      const statusEl = $('status');
+      const newBtn = $('newBtn');
+      const modeSel = $('modeSel');
+      const firstSel = $('firstSel');
+      const diffSel = $('diffSel');
+      const diffRow = $('diffRow');
+      const winlineEl = $('winline');
+      const hintEl = $('hint');
+      const trackSel=$('trackSel'); // UI NEW
+      const playBtn=$('playBtn'); // UI NEW
+      const musicVol=$('musicVol'); // UI NEW
+      const previewBtn=$('previewBtn'); // UI NEW
+      const fxBtn=$('fxBtn'); // UI NEW
+      const muteBtn = $('muteBtn');
+      const musicBtn = $('musicBtn');
+      const tapAudio = $('tapAudio');
+      const scorePop = $('scorePop');
+      const scoreTotalEl = $('scoreTotal');
+      const scoreBestEl = $('scoreBest');
+      const scoreStreakEl = $('scoreStreak');
+      const scoreStatsEl = $('scoreStats');
+      const scoreResetBtn = $('scoreReset');
+      const playerLevelEl = $('playerLevel'); /* NEW */
 
-  loadAudio(); // MUSIC NEW
-  loadUI(); // UI NEW
-  trackSel.value=audioState.track; // UI NEW
-  musicVol.value=audioState.vol; // UI NEW
-  musicBtn.textContent=audioState.enabled?'ON':'OFF'; // UI NEW
-  musicEnabled=audioState.enabled; // MUSIC NEW
-  sfxMuted=!audioState.sfx; muteBtn.textContent=audioState.sfx?'ON':'OFF'; // MUSIC NEW
-  fxBtn.textContent=uiState.fx?'ON':'OFF'; // UI NEW
-  if(uiState.fx) document.body.classList.add('lowfx'); // UI NEW
-  const xpProgressEl = document.getElementById('xpProgress'); /* NEW */
-  const menuBtn = document.getElementById('menuBtn');
-  const menu = document.getElementById('menu');
-  const menuOverlay = document.getElementById('menuOverlay');
-  const menuClose = document.getElementById('menuClose');
-  const xColorInput = document.getElementById('xColor');
-  const oColorInput = document.getElementById('oColor');
-  const bgSel = document.getElementById('bgSel');
-  const gridSizeSel = document.getElementById('gridSize');
+      loadAudio(); // MUSIC NEW
+      loadUI(); // UI NEW
+      trackSel.value=audioState.track; // UI NEW
+      musicVol.value=audioState.vol; // UI NEW
+      musicBtn.textContent=audioState.enabled?'ON':'OFF'; // UI NEW
+      musicEnabled=audioState.enabled; // MUSIC NEW
+      sfxMuted=!audioState.sfx; muteBtn.textContent=audioState.sfx?'ON':'OFF'; // MUSIC NEW
+      fxBtn.textContent=uiState.fx?'ON':'OFF'; // UI NEW
+      if(uiState.fx) document.body.classList.add('lowfx'); // UI NEW
+      const xpProgressEl = $('xpProgress'); /* NEW */
+      const menuBtn = $('menuBtn');
+      const menu = $('menu');
+      const menuOverlay = $('menuOverlay');
+      const menuClose = $('menuClose');
+      const xColorInput = $('xColor');
+      const oColorInput = $('oColor');
+      const bgSel = $('bgSel');
+      const gridSizeSel = $('gridSize');
 
   menuBtn.addEventListener('click', ()=>{ menu.classList.add('open'); menuOverlay.classList.add('show'); menuBtn.setAttribute('aria-expanded','true'); }); // UI NEW
   function closeMenu(){ menu.classList.remove('open'); menuOverlay.classList.remove('show'); menuBtn.setAttribute('aria-expanded','false'); } // UI NEW
@@ -449,7 +454,6 @@ function loadUI(){ try{ const s=JSON.parse(localStorage.getItem(UIKEY)); if(s) u
 
   // ---------- AUDIO (SFX + COLONNA SONORA) ----------
   let audioCtx=null, sfxGain, musicGain, rootGain;
-  let sfxMuted=false, musicEnabled=true;
   function ensureAudio(){ if(audioCtx) return true; try{
       audioCtx=new (window.AudioContext||window.webkitAudioContext)();
       rootGain=audioCtx.createGain(); rootGain.gain.value=.9; rootGain.connect(audioCtx.destination);
@@ -554,7 +558,7 @@ function loadUI(){ try{ const s=JSON.parse(localStorage.getItem(UIKEY)); if(s) u
   fxBtn.addEventListener('click', ()=>{ uiState.fx=!uiState.fx; fxBtn.textContent=uiState.fx?'ON':'OFF'; document.body.classList.toggle('lowfx',uiState.fx); saveUI(); }); // UI NEW
 
   // ---------- BOARD UI ----------
-  function drawBoard(){ boardEl.innerHTML=''; for(let i=0;i<9;i++){ const btn=document.createElement('button'); btn.className='cell'; btn.dataset.idx=i; btn.addEventListener('click',()=>onCell(i)); boardEl.appendChild(btn); } updateUI(); }
+  function drawBoard(){ console.log('[drawBoard]'); boardEl.innerHTML=''; for(let i=0;i<9;i++){ const btn=document.createElement('button'); btn.className='cell'; btn.dataset.idx=i; btn.addEventListener('click',()=>onCell(i)); boardEl.appendChild(btn); } updateUI(); }
   function updateUI(){
     const cells=[...boardEl.children];
     for(let i=0;i<9;i++){
@@ -683,6 +687,7 @@ function loadUI(){ try{ const s=JSON.parse(localStorage.getItem(UIKEY)); if(s) u
     }
   }
   function aiTurn(){
+    console.log('[aiTurn]');
     let move=null, level=diffSel.value, ply=board.filter(Boolean).length;
     try{
       if(level==='impossible'){
@@ -729,6 +734,7 @@ function loadUI(){ try{ const s=JSON.parse(localStorage.getItem(UIKEY)); if(s) u
 
   // ---------- END & RESET ----------
   function end(w){
+    console.log('[end]', w);
     playing=false; updateUI();
     if(w.player==='draw'){ setStatus('Parità. “Nuova partita” per riprovare.'); startDrawFX(); award('draw'); }
     else {
@@ -777,6 +783,7 @@ function loadUI(){ try{ const s=JSON.parse(localStorage.getItem(UIKEY)); if(s) u
     } else { p1Sym='X'; p2Sym='O'; }
   }
   function reset(modeChanged=false){
+    console.log('[reset]', modeChanged);
     applyRules(modeChanged);
     board = Array(9).fill(undefined);
     playing=true; clearWinLine();
@@ -811,6 +818,7 @@ function loadUI(){ try{ const s=JSON.parse(localStorage.getItem(UIKEY)); if(s) u
     const map={'7':0,'8':1,'9':2,'4':3,'5':4,'6':5,'1':6,'2':7,'3':8};
     if(map[e.key]!=null){ e.preventDefault(); const idx=map[e.key]; const cellBtn = boardEl.children[idx]; if(cellBtn && !cellBtn.disabled) cellBtn.click(); }
   });
+  console.log('[attachListeners]');
 
   // Init
   modeSel.value='ai';
@@ -819,6 +827,13 @@ function loadUI(){ try{ const s=JSON.parse(localStorage.getItem(UIKEY)); if(s) u
   diffSel.value='impossible';
   firstSel.value='ai';
   reset(false);
+  console.log('[BOOT] OK');
+    }catch(e){
+      console.error('[BOOT ERROR]', e);
+      showFatal('Errore di inizializzazione. Controlla la console.');
+    }
+  });
+  function showFatal(msg){ const d=document.createElement('div'); d.style.cssText='position:fixed;inset:0;display:grid;place-items:center;background:#000;color:#fff;z-index:9999;font:700 18px system-ui'; d.textContent=msg; document.body.appendChild(d); }
 })();
 </script>
 <script>
