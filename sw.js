@@ -1,5 +1,5 @@
 // PWA: Service Worker
-const CACHE_VERSION = 'v1'; // PWA
+const CACHE_VERSION = 'v2'; // PWA
 const STATIC_CACHE  = `static-${CACHE_VERSION}`; // PWA
 const PRECACHE_URLS = [
   './',
@@ -37,7 +37,7 @@ self.addEventListener('fetch', (event) => {
       } catch {
         const cache = await caches.open(STATIC_CACHE);
         const cached = await cache.match('./index.html');
-        return cached || Response.error();
+        return cached || new Response('Offline', { status: 503, statusText: 'Offline' });
       }
     })());
     return;
